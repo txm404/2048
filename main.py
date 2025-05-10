@@ -2,6 +2,7 @@ import pygame
 import random
 import sys
 import logging
+import math
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -25,6 +26,7 @@ LEADERBOARD_SIZE = 10 # 存储前10名分数
 COLOR_BACKGROUND = (15, 22, 36)  # 深海军蓝/近乎黑色
 COLOR_EMPTY_TILE = (30, 40, 55)   # 深灰色蓝调
 COLOR_GRID_LINES = (10, 15, 25)   # 非常暗的背景用于网格线（如果可见）
+COLOR_NEON_GRID = (0, 255, 255, 30)  # 半透明霓虹网格线
 COLOR_SCORE_BACKGROUND = (20, 28, 40) # 略浅于背景的深色
 COLOR_TEXT_NEON_CYAN = (0, 255, 255) # 霓虹青色
 COLOR_TEXT_NEON_MAGENTA = (255, 0, 255) # 霓虹洋红色
@@ -336,6 +338,20 @@ class Game2048:
         # Draw background and grid lines for a subtle cyberpunk terminal look
         screen.fill(COLOR_BACKGROUND)
 
+        # 绘制动态霓虹网格线
+        for i in range(BOARD_SIZE + 1):
+            x = TILE_MARGIN + i * (TILE_SIZE + TILE_MARGIN)
+            pygame.draw.line(screen, COLOR_NEON_GRID, (x, SCORE_HEIGHT), (x, SCREEN_HEIGHT), 3)
+            y = SCORE_HEIGHT + TILE_MARGIN + i * (TILE_SIZE + TILE_MARGIN)
+            pygame.draw.line(screen, COLOR_NEON_GRID, (0, y), (SCREEN_WIDTH, y), 3)
+            
+            # 添加网格线动画效果
+            anim_offset = int(pygame.time.get_ticks() * 0.02 % 10 - 5)
+            pygame.draw.line(screen, COLOR_NEON_GRID, 
+                           (x + anim_offset, SCORE_HEIGHT + anim_offset), 
+                           (x - anim_offset, SCREEN_HEIGHT - anim_offset), 
+                           1)
+
         # Draw score area with a neon accent
         pygame.draw.rect(screen, COLOR_SCORE_BACKGROUND, (0, 0, SCREEN_WIDTH, SCORE_HEIGHT))
         # Neon line accent for score area
@@ -373,6 +389,25 @@ class Game2048:
                 pygame.draw.rect(screen, tile_color, (left, top, TILE_SIZE, TILE_SIZE), border_radius=5)
                 # Add a subtle darker border to make tiles pop a bit more from the background
                 pygame.draw.rect(screen, COLOR_BACKGROUND, (left, top, TILE_SIZE, TILE_SIZE), width=2, border_radius=5)
+
+                # 添加脉冲发光效果
+                if tile_value >= 8:  # 仅对高数值方块添加
+                    glow_intensity = (math.sin(pygame.time.get_ticks() * 0.005) * 0.5 + 0.5) * 55 + 200
+                    glow_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+                    glow_surface.fill((*tile_color[:3], int(glow_intensity)))
+                    screen.blit(glow_surface, (left, top))
+
+                    # 添加粒子效果
+                    particle_count = 6
+                    for i in range(particle_count):
+                        angle = (pygame.time.get_ticks() * 0.1 + i * 60) % 360
+                        radius = (math.sin(pygame.time.get_ticks() * 0.001) * 5 + 15) * (1 + tile_value / 2048)
+                        x = left + TILE_SIZE//2 + math.cos(math.radians(angle)) * radius
+                        y = top + TILE_SIZE//2 + math.sin(math.radians(angle)) * radius
+                        pygame.draw.circle(screen, 
+                                         (random.choice([COLOR_TEXT_NEON_CYAN, COLOR_TEXT_NEON_MAGENTA, COLOR_TEXT_NEON_YELLOW])),
+                                         (int(x), int(y)), 
+                                         int(2 + abs(math.sin(pygame.time.get_ticks()*0.005 + i))*2))
 
 
                 # Draw tile number if not zero

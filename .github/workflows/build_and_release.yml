@@ -61,7 +61,7 @@ jobs:
           --include-module=pygame \
           --output-dir=dist \
           --output-filename=${{ matrix.output_name }} \
-          2048.py
+          main.py
       shell: bash
       # 使用bash确保命令在所有平台上一致执行
 
